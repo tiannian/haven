@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = ["plugins/core", "plugins/manager", "plugins/protocol"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+anyhow = "1.0"
+bytes = "1.10.1"

@@ -1,0 +1,6 @@
+[package]
+name = "haven-plugins-manager"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
