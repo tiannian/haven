@@ -1,26 +1,27 @@
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+
 use anyhow::Result;
 use bytes::{Buf, BufMut};
 
-pub enum IpEndPoint {
-    Ipv4([u8; 4]),
+pub enum IpEndpoint {
+    IpAddr(IpAddr),
     Domain(String),
-    Ipv6([u8; 16]),
 }
 
-impl IpEndPoint {
+impl IpEndpoint {
     pub fn dump(&self, buf: &mut impl BufMut) {
         match self {
-            IpEndPoint::Ipv4(ip) => {
+            IpEndpoint::IpAddr(IpAddr::V4(addr)) => {
                 buf.put_u8(0);
-                buf.put_slice(ip);
+                buf.put_slice(&addr.octets());
             }
-            IpEndPoint::Domain(domain) => {
+            IpEndpoint::Domain(domain) => {
                 buf.put_u8(3);
                 buf.put_slice(domain.as_bytes());
             }
-            IpEndPoint::Ipv6(ip) => {
+            IpEndpoint::IpAddr(IpAddr::V6(addr)) => {
                 buf.put_u8(4);
-                buf.put_slice(ip);
+                buf.put_slice(&addr.octets());
             }
         }
     }
@@ -31,17 +32,17 @@ impl IpEndPoint {
             0 => {
                 let mut ip = [0u8; 4];
                 buf.copy_to_slice(&mut ip);
-                Ok(IpEndPoint::Ipv4(ip))
+                Ok(IpEndpoint::IpAddr(IpAddr::V4(Ipv4Addr::from(ip))))
             }
             1 => {
                 let domain_len = buf.get_u8();
                 let domain = buf.copy_to_bytes(domain_len as usize);
-                Ok(IpEndPoint::Domain(String::from_utf8(domain.to_vec())?))
+                Ok(IpEndpoint::Domain(String::from_utf8(domain.to_vec())?))
             }
             2 => {
                 let mut ip = [0u8; 16];
                 buf.copy_to_slice(&mut ip);
-                Ok(IpEndPoint::Ipv6(ip))
+                Ok(IpEndpoint::IpAddr(IpAddr::V6(Ipv6Addr::from(ip))))
             }
             _ => anyhow::bail!("invalid ip endpoint type: {}", ty),
         }

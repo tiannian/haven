@@ -1,10 +1,10 @@
 use anyhow::Result;
 use bytes::{Buf, BufMut};
 
-use crate::IpEndPoint;
+use crate::IpEndpoint;
 
 pub struct AppPacket {
-    pub endpoint: IpEndPoint,
+    pub endpoint: IpEndpoint,
     pub port: u16,
     pub data: Vec<u8>,
 }
@@ -18,7 +18,7 @@ impl AppPacket {
     }
 
     pub fn load(buf: &mut impl Buf) -> Result<Self> {
-        let endpoint = IpEndPoint::load(buf)?;
+        let endpoint = IpEndpoint::load(buf)?;
         let port = buf.get_u16();
         let length = buf.get_u16();
         let data = buf.copy_to_bytes(length as usize);

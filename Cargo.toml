@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["plugins/core", "plugins/manager", "plugins/protocol"]
+members = ["plugins/manager", "plugins/protocol"]
 
 [workspace.package]
 version = "0.1.0"
