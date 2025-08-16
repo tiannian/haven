@@ -6,18 +6,13 @@ use std::{
 };
 
 use libc::{
-    AF_PACKET, ETH_P_ALL, ETH_P_IP, ETH_P_IPV6, SOCK_RAW, bind, c_int, close, if_nametoindex, recv,
-    send, sockaddr, sockaddr_ll, socket, socklen_t,
+    AF_PACKET, ETH_P_ALL, ETH_P_IP, ETH_P_IPV6, SOCK_RAW, bind, c_int, close, htons,
+    if_nametoindex, recv, send, sockaddr, sockaddr_ll, socket, socklen_t,
 };
 use tokio::io::unix::AsyncFd;
 
 pub struct EthernetSocket {
     fd: AsyncFd<RawFd>,
-}
-
-#[inline]
-fn htons(u: u16) -> u16 {
-    u.to_be()
 }
 
 impl EthernetSocket {
@@ -53,6 +48,7 @@ impl EthernetSocket {
             )
         };
         if rc < 0 {
+            unsafe { close(fd) };
             return Err(io::Error::last_os_error());
         }
 
