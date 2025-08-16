@@ -1,0 +1,11 @@
+[package]
+name = "socket-ext"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tokio = { version = "1", features = ["net"] }
+libc = "0.2.175"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
