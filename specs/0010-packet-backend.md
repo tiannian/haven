@@ -142,10 +142,13 @@ Required receiver behavior:
 Receiver function signature requirements:
 
 - the function name must clearly indicate packet reception
+- the function must be asynchronous
 - the function must return a result type with an error model
 - the function must accept an output buffer or return a batch directly
 
-The receiver may block, poll, or integrate with an asynchronous runtime, but the contract must clearly define readiness behavior.
+The receiver contract must be async-ready and define readiness behavior through its asynchronous API rather than a synchronous blocking call.
+
+If a backend needs link layer data or readiness polling internally, that detail must remain private to the backend implementation.
 
 A representative Rust receiver contract is shown below:
 
@@ -153,7 +156,7 @@ A representative Rust receiver contract is shown below:
 pub trait L3Receiver {
     type Error;
 
-    fn recv_batch(&mut self, output: &mut Vec<Packet>) -> Result<usize, Self::Error>;
+    async fn recv_batch(&mut self, output: &mut Vec<Packet>) -> Result<usize, Self::Error>;
 }
 ```
 
@@ -173,8 +176,11 @@ Required sender behavior:
 Sender function signature requirements:
 
 - the function name must clearly indicate packet sending
+- the function must be asynchronous
 - the function must return a result type with an error model
 - the function must accept a batch of packets or a single packet
+
+The sender contract must be async-ready and define completion behavior through its asynchronous API rather than a synchronous blocking call.
 
 The sender may use operating system assistance for address resolution or may perform address resolution internally, but the public contract must not require the caller to supply link layer details.
 
@@ -184,7 +190,7 @@ A representative Rust sender contract is shown below:
 pub trait L3Sender {
     type Error;
 
-    fn send_batch(&mut self, packets: &[Packet]) -> Result<usize, Self::Error>;
+    async fn send_batch(&mut self, packets: &[Packet]) -> Result<usize, Self::Error>;
 }
 ```
 
