@@ -18,7 +18,7 @@ The specification covers:
 
 - packet data model
 - receiver and sender behavior
-- batch processing semantics
+- packet processing semantics
 - metadata and hints
 - error handling requirements
 - backend invariants
@@ -130,11 +130,11 @@ Metadata must not change the fact that the packet contract remains Internet laye
 
 A receiver consumes packets from the operating system or an equivalent backend source and produces public packet objects.
 
-The receiver contract must support batch retrieval.
+The receiver contract must support direct packet retrieval.
 
 Required receiver behavior:
 
-- return one or more packets per call when available
+- return a single packet per call when available
 - preserve packet ordering within the same backend source stream unless the platform makes that impossible
 - report end of stream only when the backend is shut down or detached
 - never expose link layer frames to the caller
@@ -144,9 +144,11 @@ Receiver function signature requirements:
 - the function name must clearly indicate packet reception
 - the function must be asynchronous
 - the function must return a result type with an error model
-- the function must accept an output buffer or return a batch directly
+- the function must return a single packet result directly
 
 The receiver contract must be async-ready and define readiness behavior through its asynchronous API rather than a synchronous blocking call.
+
+The receiver interface must not require mutable self; implementors may use internal mutability or external state to manage readiness.
 
 If a backend needs link layer data or readiness polling internally, that detail must remain private to the backend implementation.
 
@@ -156,7 +158,7 @@ A representative Rust receiver contract is shown below:
 pub trait L3Receiver {
     type Error;
 
-    async fn recv_batch(&mut self, output: &mut Vec<Packet>) -> Result<usize, Self::Error>;
+    async fn recv(&self) -> Result<Option<Packet>, Self::Error>;
 }
 ```
 
@@ -164,7 +166,7 @@ pub trait L3Receiver {
 
 A sender accepts public packet objects and transmits them toward the operating system or network.
 
-The sender contract must support batch submission.
+The sender contract must support direct packet submission.
 
 Required sender behavior:
 
@@ -178,9 +180,11 @@ Sender function signature requirements:
 - the function name must clearly indicate packet sending
 - the function must be asynchronous
 - the function must return a result type with an error model
-- the function must accept a batch of packets or a single packet
+- the function must accept a single packet directly
 
 The sender contract must be async-ready and define completion behavior through its asynchronous API rather than a synchronous blocking call.
+
+The sender interface must not require mutable self; implementors may use internal mutability or external state to manage submission.
 
 The sender may use operating system assistance for address resolution or may perform address resolution internally, but the public contract must not require the caller to supply link layer details.
 
@@ -190,22 +194,22 @@ A representative Rust sender contract is shown below:
 pub trait L3Sender {
     type Error;
 
-    async fn send_batch(&mut self, packets: &[Packet]) -> Result<usize, Self::Error>;
+    async fn send(&self, packet: Packet) -> Result<(), Self::Error>;
 }
 ```
 
-### 5. Batch processing requirements
+### 5. Packet processing requirements
 
-Batch processing is a required capability.
+Packet processing is a required capability.
 
-The backend must support batch receive and batch send semantics because the project targets high throughput packet handling.
+The backend must support direct receive and direct send semantics because the project targets high throughput packet handling.
 
-Batch semantics requirements:
+Packet processing requirements:
 
-- zero returned packets is valid when no packet is ready
-- partial batch completion is valid when the backend can only process part of the input or output set
-- batch processing must not reorder packets within the same batch unless the backend documents a platform limitation
-- batch interfaces must be safe to use repeatedly in a loop
+- a returned packet is valid when one packet is available
+- a single packet send is valid when the backend can transmit it
+- packet processing must not reorder packets relative to the same source stream unless the backend documents a platform limitation
+- packet interfaces must be safe to use repeatedly in a loop
 
 ### 6. Backend responsibilities
 
